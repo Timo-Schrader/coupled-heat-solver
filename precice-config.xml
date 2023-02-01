@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<precice-configuration>
+  <log>
+    <sink
+      type="stream"
+      output="stdout"
+      filter="%Severity% > debug"
+      format="preCICE:%ColorizedSeverity% %Message%"
+      enabled="true" />
+  </log>
+
+  <solver-interface dimensions="2">
+    <data:scalar name="dataLeft" />
+    <data:scalar name="dataRight" />
+
+    <mesh name="MeshLeft">
+      <use-data name="dataLeft" />
+      <use-data name="dataRight" />
+    </mesh>
+
+    <mesh name="MeshRight">
+      <use-data name="dataLeft" />
+      <use-data name="dataRight" />
+    </mesh>
+
+    <participant name="Left">
+      <provide-mesh name="MeshLeft" />
+      <write-data name="dataLeft" mesh="MeshLeft" />
+      <read-data name="dataRight" mesh="MeshLeft" />
+    </participant>
+
+    <participant name="Right">
+      <receive-mesh name="MeshLeft" from="Left" />
+      <provide-mesh name="MeshRight" />
+      <mapping:rbf-gaussian
+        direction="write"
+        support-radius="0.003"
+        from="MeshRight"
+        to="MeshLeft"
+        constraint="consistent" 
+        ginkgo-solver="ginkgo-cg-solver"
+        ginkgo-executor="ginkgo-cuda-executor"
+        ginkgo-residual-norm="1e-2"/>
+      <mapping:rbf-gaussian
+        direction="read"
+        support-radius="0.003"
+        from="MeshLeft"
+        to="MeshRight"
+        constraint="consistent" 
+        ginkgo-solver="ginkgo-cg-solver"
+        ginkgo-executor="ginkgo-cuda-executor"
+        ginkgo-residual-norm="1e-2"/>
+      <write-data name="dataRight" mesh="MeshRight" />
+      <read-data name="dataLeft" mesh="MeshRight" />
+    </participant>
+
+    <m2n:mpi from="Left" to="Right" />
+
+    <coupling-scheme:serial-explicit>
+      <participants first="Left" second="Right" />
+      <max-time value="1.0" />
+      <time-window-size value="0.1" />
+      <exchange data="dataLeft" mesh="MeshLeft" from="Left" to="Right" />
+    </coupling-scheme:serial-explicit>
+  </solver-interface>
+</precice-configuration>
