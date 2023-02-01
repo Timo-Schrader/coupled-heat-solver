@@ -20,7 +20,7 @@ using EventTimings::Event;
 using EventTimings::EventRegistry;
 
 precision_type rightBoundary = 10.0;
-precision_type leftBoundary = 15.0;
+precision_type leftBoundary = 10.0;
 
 void fillStencilMatrix(matrix *mat, const precision_type sx, const precision_type sy)
 {
@@ -57,8 +57,20 @@ void fillStencilMatrix(matrix *mat, const precision_type sx, const precision_typ
     }
 }
 
-void fillRhs(std::shared_ptr<vector> &vec, const precision_type N)
+void addLeftBoundaryCondition(vector *vec, const std::size_t N)
 {
+    for (std::size_t i = 1; i < N - 1; ++i)
+    {
+        vec->at(i * N, 0) += leftBoundary;
+    }
+}
+
+void addRightBoundaryCondition(vector *vec, const std::size_t N)
+{
+    for (std::size_t i = 1; i < N; ++i)
+    {
+        vec->at(i * N - 1, 0) += rightBoundary;
+    }
 }
 
 int main(int argc, char *argv[])
@@ -106,7 +118,7 @@ int main(int argc, char *argv[])
 
     // Divide uniform 2D grid (0, 1) x (0, 1) into h + 1 section in each dimension
     precision_type h = 1 / static_cast<precision_type>(N);
-    precision_type kappa = 0.01;
+    precision_type kappa = 0.7;
     precision_type sx = kappa * (0.1 / (h * h)); // TODO: Adapt
     precision_type sy = sx;
 
@@ -119,7 +131,7 @@ int main(int argc, char *argv[])
     {
         for (int i = 0; i < N; i++)
         {
-            vertices.at(dimensions * i) = N;         // dx
+            vertices.at(dimensions * i) = 1;         // dx
             vertices.at(dimensions * i + 1) = i * h; // dy
         }
     }
@@ -129,7 +141,7 @@ int main(int argc, char *argv[])
         const precision_type yOffset = 0.003;
         for (int i = 0; i < N; i++)
         {
-            vertices.at(dimensions * i) = N;                   // dx
+            vertices.at(dimensions * i) = 1;                   // dx
             vertices.at(dimensions * i + 1) = i * h + yOffset; // dy
         }
     }
@@ -174,27 +186,20 @@ int main(int argc, char *argv[])
     // Fill finite difference matrix
     fillStencilMatrix(gko::lend(A), sx, sy);
 
+    if (solverName == "Right")
+    {
+        std::ofstream o("stencil_matrix.mtx");
+
+        gko::write(o, gko::lend(A), gko::layout_type::coordinate);
+
+        o.close();
+    }
+
     // Fill rhs vector T and solution vector u with zeros
     for (std::size_t i = 0; i < T->get_size()[0]; ++i)
     {
         T->at(i, 0) = 0.0;
         u->at(i, 0) = 0.0;
-    }
-
-    // Add left and right boundary conditions to rhs
-    if ("Left" == solverName)
-    {
-        for (std::size_t i = 1; i < N - 1; ++i)
-        {
-            T->at(i * N, 1) += leftBoundary;
-        }
-    }
-    else
-    {
-        for (std::size_t i = 1; i < N; ++i)
-        {
-            T->at(i * N - 1, 1) += rightBoundary;
-        }
     }
 
     auto cgSolver = solverFactory->generate(A);
@@ -203,7 +208,7 @@ int main(int argc, char *argv[])
 
     std::size_t idx = 0;
 
-    Event barrier{"barrier", true};
+    Event barrier{"barrier", false};
 
     while (interface.isCouplingOngoing())
     {
@@ -221,15 +226,19 @@ int main(int argc, char *argv[])
             // Get values of right boundary
             for (std::size_t i = 1; i < N; ++i)
             {
-                T->at(i * N - 1, 1) = readData.at(i);
+                T->at(i * N - 1, 0) = readData.at(i);
             }
+
+            addLeftBoundaryCondition(gko::lend(T), N);
         }
         else
         {
             for (std::size_t i = 1; i < N - 1; ++i)
             {
-                T->at(i * N, 1) = readData.at(i);
+                T->at(i * N, 0) = readData.at(i);
             }
+
+            addRightBoundaryCondition(gko::lend(T), N);
         }
 
         cgSolver->apply(gko::lend(T), gko::lend(u));
@@ -250,14 +259,14 @@ int main(int argc, char *argv[])
             // Get values of right boundary
             for (std::size_t i = 1; i < N; ++i)
             {
-                readData.at(i) = u->at(i * N - 1, 1);
+                readData.at(i) = u->at(i * N - 1, 0);
             }
         }
         else
         {
             for (std::size_t i = 1; i < N - 1; ++i)
             {
-                readData.at(i) = u->at(i * N, 1);
+                readData.at(i) = u->at(i * N, 0);
             }
         }
 
@@ -274,9 +283,9 @@ int main(int argc, char *argv[])
         ++idx;
     }
 
-    interface.finalize();
-
     EventRegistry::instance().finalize();
+
+    interface.finalize();
 
     return 0;
 }

@@ -54,7 +54,7 @@
       <read-data name="dataLeft" mesh="MeshRight" />
     </participant>
 
-    <m2n:mpi from="Left" to="Right" />
+    <m2n:sockets from="Left" to="Right" />
 
     <coupling-scheme:serial-explicit>
       <participants first="Left" second="Right" />
