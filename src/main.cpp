@@ -208,15 +208,11 @@ int main(int argc, char *argv[])
 
     std::size_t idx = 0;
 
-    Event barrier{"barrier", false};
-
     while (interface.isCouplingOngoing())
     {
         if (interface.requiresWritingCheckpoint())
         {
         }
-
-        barrier.start();
 
         interface.readBlockScalarData(readDataID, N, vertexIDs.data(), readData.data());
 
@@ -273,8 +269,6 @@ int main(int argc, char *argv[])
         interface.writeBlockScalarData(writeDataID, N, vertexIDs.data(), writeData.data());
 
         dt = interface.advance(dt);
-
-        barrier.pause();
 
         if (interface.requiresReadingCheckpoint())
         {

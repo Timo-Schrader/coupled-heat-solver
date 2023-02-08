@@ -25,6 +25,7 @@
 
     <participant name="Left">
       <provide-mesh name="MeshLeft" />
+      <receive-mesh name="MeshRight" from="Right" />
       <write-data name="dataLeft" mesh="MeshLeft" />
       <read-data name="dataRight" mesh="MeshLeft" />
     </participant>
@@ -61,6 +62,7 @@
       <max-time value="1.0" />
       <time-window-size value="0.1" />
       <exchange data="dataLeft" mesh="MeshLeft" from="Left" to="Right" />
+      <exchange data="dataRight" mesh="MeshRight" from="Right" to="Left" />
     </coupling-scheme:serial-explicit>
   </solver-interface>
 </precice-configuration>
