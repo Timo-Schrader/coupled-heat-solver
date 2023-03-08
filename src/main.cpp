@@ -27,6 +27,14 @@ void fillStencilMatrix(matrix *mat, const precision_type sx, const precision_typ
     const unsigned int N = mat->get_size()[0];
     const unsigned int numVerticesPerRow = std::sqrt(N);
 
+    for (std::size_t i = 0; i < N; ++i)
+    {
+        for (std::size_t j = 0; j < N; ++j)
+        {
+            mat->at(i, j) = 0.;
+        }
+    }
+
     mat->at(0, 0) = 1 + 2 * sx + 2 * sy;
     mat->at(0, 1) = -sx;
 
