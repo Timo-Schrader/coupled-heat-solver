@@ -33,24 +33,28 @@
     <participant name="Right">
       <receive-mesh name="MeshLeft" from="Left" />
       <provide-mesh name="MeshRight" />
-      <mapping:rbf-gaussian
+      <mapping:rbf-global-iterative
         direction="write"
-        support-radius="0.003"
         from="MeshRight"
         to="MeshLeft"
         constraint="consistent" 
-        ginkgo-solver="ginkgo-cg-solver"
-        ginkgo-executor="ginkgo-cuda-executor"
-        ginkgo-residual-norm="1e-2"/>
-      <mapping:rbf-gaussian
+        solver="cg-solver"
+        executor="omp-executor"
+        solver-rtol="1e-2"
+        max-iterations="1000">
+        <basis-function:gaussian support-radius="0.003"/>
+        </mapping:rbf-global-iterative>
+      <mapping:rbf-global-iterative
         direction="read"
-        support-radius="0.003"
         from="MeshLeft"
         to="MeshRight"
         constraint="consistent" 
-        ginkgo-solver="ginkgo-cg-solver"
-        ginkgo-executor="ginkgo-cuda-executor"
-        ginkgo-residual-norm="1e-2"/>
+        solver="cg-solver"
+        executor="omp-executor"
+        solver-rtol="1e-2"
+        max-iterations="1000">
+        <basis-function:gaussian support-radius="0.003"/>
+        </mapping:rbf-global-iterative>
       <write-data name="dataRight" mesh="MeshRight" />
       <read-data name="dataLeft" mesh="MeshRight" />
     </participant>

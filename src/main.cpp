@@ -210,10 +210,6 @@ int main(int argc, char *argv[])
 
     while (interface.isCouplingOngoing())
     {
-        if (interface.requiresWritingCheckpoint())
-        {
-        }
-
         interface.readBlockScalarData(readDataID, N, vertexIDs.data(), readData.data());
 
         // Write data into T
@@ -269,10 +265,6 @@ int main(int argc, char *argv[])
         interface.writeBlockScalarData(writeDataID, N, vertexIDs.data(), writeData.data());
 
         dt = interface.advance(dt);
-
-        if (interface.requiresReadingCheckpoint())
-        {
-        }
 
         ++idx;
     }
